@@ -7,14 +7,22 @@ from pygame.locals import *
 import RPi.GPIO as GPIO
 import os
 import time
+# ensure initializing the PWM only once
 left_start = False
 right_start = False
 
+# ==============================================
+# Calculate the duty cycle and frequency
+# for certain width of interval and pulse
+# idle_period: the width of interval
+# pulse_period: the width of pulse
+# ==============================================
 def cal_dc_and_freq(idle_period,pulse_period):
     dc = pulse_period / (pulse_period + idle_period) * 100
     freq = 1000 / (idle_period + pulse_period)
     return dc,freq
 
+# pre_calculate the duty cycle and freq for stop, clkwise and counterclkwise
 idle_period = 20
 stop_period = 0
 fully_clockwise = 1.3
@@ -23,6 +31,11 @@ still_dc,still_freq = cal_dc_and_freq(idle_period,stop_period)
 fully_clock_dc,fully_clock_freq = cal_dc_and_freq(idle_period,fully_clockwise)
 fully_counter_dc,fully_counter_freq = cal_dc_and_freq(idle_period,fully_counter_clockwise)
 
+# =================================================
+# Function of changing the state for diff servo
+# servo_number: 0 - left, 1 - right
+# direction: stop, clkwise and counterclkwise
+# =================================================
 def servo_motion(servo_num,direction):
     if servo_num != 0 and servo_num!= 1:
         print "wrong servo num"
@@ -47,7 +60,7 @@ def servo_motion(servo_num,direction):
             p1.ChangeFrequency(fully_clock_freq)
             p1.ChangeDutyCycle(fully_clock_dc)
         elif direction == "counterclk":
-            p1.ChangeFrequency(fully_counter_freq)
+            p1.ChangeFrequency(textfully_counter_freq)
             p1.ChangeDutyCycle(fully_counter_dc)
         elif direction == "stop":
             p1.ChangeFrequency(still_freq)
@@ -68,7 +81,11 @@ def servo_motion(servo_num,direction):
             p2.ChangeDutyCycle(still_dc)
     print servo_number, direction
 
-#class for font button
+# Class for font button
+# Attribution:
+# 	font: Font class for specific size
+#	surface: The produced surface after rendering
+# 	rect: The rect or buundary of font
 class My_font:
     def __init__(self, text, color, pos, size = 40):
         self.font = pygame.font.Font(None, size)
@@ -86,13 +103,19 @@ try:
 except opt.GetoptError:
     print 'The error occurs in arguments'
     exit(1)
-	
+
+# set the environmrntal variables for screen display
 if display_on_piTFT:
     os.putenv('SDL_VIDEODRIVER', 'fbcon')
     os.putenv('SDL_FBDEV', '/dev/fb1') 
     os.putenv('SDL_MOUSEDRV', 'TSLIB')
     os.putenv('SDL_MOUSEDEV', '/dev/input/touchscreen')
 
+# =========================================================
+# update the history info for both servo
+# servo_number: 0 - left, 1 - right
+# direction: stop, clkwise or counterclkwise
+# =========================================================
 def dict_change(servo_num, direction):
     ctime = time.time()
     global stime
@@ -107,19 +130,27 @@ def dict_change(servo_num, direction):
         right_history_info[(260,120)] = right_history_info[(260,100)]
         right_history_info[(260,100)] = '{:<10}'.format(direction) +  str(int(ctime-stime))
 
-
+# Three different flag signal
+# running: whether the program is running
+# is_stop: whether stop button is pressed
+# re_draw: whether to update the screen
 running = True
 is_stop = False
 re_draw = False
 
+# init GPIO mode and set up pins
 GPIO.setmode(GPIO.BCM)
 channel = [17,22,23,27]
 sub_channel=[17,22,23]
 out_channel=[13,19]
 GPIO.setup(channel, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(out_channel, GPIO.OUT)
+
+# set beginning servo and relation between button and functions.
 servo_number = 0
 servo_dict = { '17':"clkwise", '22':"counterclk",'23':"stop"}
+
+# Function for changing servo state and inducing history info update and re-draw signal
 def GPIO_callback(channel):
     global re_draw
     global is_stop
@@ -133,6 +164,7 @@ def GPIO_callback(channel):
         else:
             latest_right = servo_dict[str(channel)]
         dict_change(servo_number,servo_dict[str(channel)]) 
+# Function for switching servo under control
 def GPIO27_callback(channel):
     global servo_number
     servo_number = servo_number ^ 1
@@ -140,7 +172,7 @@ for chan in sub_channel:
     GPIO.add_event_detect(chan,GPIO.FALLING,callback=GPIO_callback,bouncetime=300)
 GPIO.add_event_detect(27,GPIO.FALLING,callback=GPIO27_callback,bouncetime=300)
 
-
+# Init pygame system
 pygame.init()
 if display_on_piTFT:
     pygame.mouse.set_visible(False)
@@ -155,7 +187,7 @@ screen = pygame.display.set_mode(size)
 screen.fill(black)
 main_font = pygame.font.Font(None, 25)
 
-#render quit button
+#render quit, stop and resume button, static text of left history and right history
 quit = My_font('quit',white,(250,210))
 stop = My_font('stop',white,(160,120),30)
 resume = My_font('resume',white,(160,120),30)
@@ -163,12 +195,13 @@ left_history = My_font('left history',white,(60,60),25)
 right_history = My_font('right history',white,(260,60),25)
 left_history_info = { (60,100):'stop         0', (60,120):'stop         0', (60,140):'stop         0'}
 right_history_info = { (260,100):'stop         0', (260,120):'stop         0', (260,140):'stop         0'}
-
+# create a red circle
 circle_rect = pygame.draw.circle(screen, red, [160, 120], 35)
 screen.blit(quit.text_surface,quit.rect)
 screen.blit(stop.text_surface,stop.rect)
 screen.blit(left_history.text_surface,left_history.rect)
 screen.blit(right_history.text_surface,right_history.rect)
+# display the history
 for text_pos, my_text in left_history_info.items():
     text_surface = main_font.render(my_text, True, white)
     rect = text_surface.get_rect(center=text_pos)
@@ -179,9 +212,12 @@ for text_pos, my_text in right_history_info.items():
     screen.blit(text_surface, rect)
 pygame.display.flip()
 
+# record the start time to calculate the time for diff operation
 stime = time.time()
 latest_left = "stop"
 latest_right = "stop"
+
+# pooling loop to check the pygame event and re-draw the screen when state changes
 while running:
     for event in pygame.event.get():
         if event.type == KEYDOWN:
@@ -194,9 +230,11 @@ while running:
             if circle_rect.collidepoint(pos):
                 re_draw = True
                 if is_stop == False:
+		    # stop
                     servo_motion(0,"stop")
                     servo_motion(1,"stop")
                 else:
+		    # resume
                     servo_motion(0,latest_left)
                     servo_motion(1,latest_right)
                 is_stop = ~is_stop            
@@ -204,6 +242,7 @@ while running:
             running = False
     time.sleep(0.02)
 
+    # re-draw the whole screen (pay atten to the order of them)
     if re_draw:
         screen.fill(black)
         if is_stop:
