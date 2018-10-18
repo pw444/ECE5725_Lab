@@ -1,4 +1,12 @@
 #!/usr/bin/python
+#========================================================
+#  Name: servo_control.py
+#  Date: 2018-10-4
+#  Author: Peng Wu(pw444) Junyi Shen(js3439)
+#  Lab Number: Three
+#  Description: This python script is to change the pulse
+#  width for servo to reach different speed and direction
+#========================================================
 import RPi.GPIO as GPIO
 import time
 
