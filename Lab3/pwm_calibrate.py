@@ -1,4 +1,12 @@
 #!/usr/bin/python
+#========================================================
+#  Name: pwm_calibrate.py
+#  Date: 2018-10-4
+#  Author: Peng Wu(pw444) Junyi Shen(js3439)
+#  Lab Number: Three
+#  Description: This python script is to send the servo
+#  the center value of PWM range it could accept
+#========================================================
 import RPi.GPIO as GPIO
 # set up GPIO mode
 GPIO.setmode(GPIO.BCM)
