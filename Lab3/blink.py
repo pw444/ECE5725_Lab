@@ -1,4 +1,12 @@
 #!/usr/bin/python
+#========================================================
+#  Name: blink.py
+#  Date: 2018-10-4
+#  Author: Peng Wu(pw444) Junyi Shen(js3439)
+#  Lab Number: Three
+#  Description: This python script is to make the LED
+#  on and off over a second
+#========================================================
 import RPi.GPIO as GPIO
 # set up GPIO mode
 GPIO.setmode(GPIO.BCM)
