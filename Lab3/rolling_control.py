@@ -1,5 +1,13 @@
 #!/usr/bin/python
-
+#========================================================
+#  Name: rolling_control.py
+#  Date: 2018-10-4
+#  Author: Peng Wu(pw444) Junyi Shen(js3439)
+#  Lab Number: Three
+#  Description: This python script is to use buttons to 
+#  control the servo and present three latest info on the
+#  screen
+#========================================================
 import sys
 import getopt as opt
 import pygame
