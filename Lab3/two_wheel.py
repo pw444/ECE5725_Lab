@@ -1,4 +1,12 @@
 #!/usr/bin/python
+#========================================================
+#  Name: two_wheel.py
+#  Date: 2018-10-4
+#  Author: Peng Wu(pw444) Junyi Shen(js3439)
+#  Lab Number: Three
+#  Description: This python script is to use buttons
+#  to control both servos
+#========================================================
 import RPi.GPIO as GPIO
 # set up the flag for ensure the PWM initilization once
 left_start = False
